@@ -1,13 +1,35 @@
 import { Injectable } from '@angular/core';
 import {CanActivate, Router} from '@angular/router';
 import 'rxjs/Rx';
+import 'rxjs/Observable';
+
+import {StoreHelper} from './store-helper';
+import {Store} from '../store';
+import {ApiService} from './api';
+import {Observable} from "rxjs";
 
 @Injectable()
 export class AuthService implements CanActivate {
   JWT_KEY: string = 'retain_token';
-  JWT: string = '';
+  JWT: string = 'h';
 
-  constructor(private router: Router) {}
+  constructor(
+      private router: Router,
+      private storeHelper: StoreHelper,
+      private store: Store,
+      private api: ApiService
+  ) {
+      const token = window.localStorage.getItem(this.JWT_KEY);
+      if (token){
+          this.setJwt(token);
+      }
+  }
+
+  setJwt(jwt:string){window.localStorage.setItem(this.JWT_KEY,jwt);
+      this.api.setHeaders(
+          {Authorization: `Bearer ${jwt}`}
+      );
+  }
 
   isAuthorized(): boolean {
     return Boolean(this.JWT);
@@ -24,4 +46,18 @@ export class AuthService implements CanActivate {
       this.router.navigate(['', 'auth']);
     }
   }
+
+  authenticate(path, credits): Observable<any>{
+      return this.api.post(`/${path}`,credits)
+          .do((res: any)=>this.setJwt(res.token))
+          .do((res:any)=>this.storeHelper.update('user',res.data))
+          .map((res:any)=>res.data);
+  }
+
+  signout(){
+      window.localStorage.removeItem(this.JWT_KEY);
+      this.store.purge();
+      this.router.navigate(['','auth']);
+  }
+
 }
