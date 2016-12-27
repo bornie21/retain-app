@@ -32,4 +32,4 @@ import {
 })
 export class AppModule {}
 
-platformBrowserDynamic().bootstrapModule(AppModule)
+platformBrowserDynamic().bootstrapModule(AppModule);
